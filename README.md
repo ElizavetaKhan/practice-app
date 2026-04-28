@@ -48,3 +48,24 @@
 - Стили: CSS 
 - Логика: client-side
 - Контейнеризация: Docker
+
+---
+
+## Локальный запуск
+
+### 1. Клонировать репозиторий
+
+```git clone git@github.com:ElizavetaKhan/practice-app.git```
+```cd frontend```
+
+### 2. Собрать Docker-образ
+
+```docker build -t practice-app .```
+
+### 3. Запустить контейнер
+
+```docker run -p 3000:3000 practice-app```
+
+### 4. Открыть в браузере
+
+```http://localhost:3000```
