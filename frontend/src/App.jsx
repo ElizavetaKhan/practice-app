@@ -1,217 +1,4 @@
-import { useMemo, useState } from "react";
-
-const METHODS = [
-  {
-    name: "Метод проговаривания мыслей (Think Aloud)",
-    description:
-      "Пользователь вслух комментирует действия и ожидания во время выполнения задачи.",
-    goals: ["поведение", "проблемы"],
-    dataType: "качественные",
-    stage: ["концепция", "разработка", "готовый"],
-    context: ["лабораторно", "удаленно"],
-    requiresUsers: true,
-    resources: "средние",
-    strengths: ["Показывает причины ошибок", "Хорошо раскрывает логику пользователя"],
-    weaknesses: ["Требует модерации", "Анализ занимает время"],
-    whatItGives: "Понимание того, где и почему пользователь затрудняется.",
-  },
-  {
-    name: "Экспертная оценка (Heuristic Evaluation)",
-    description:
-      "Эксперты проверяют интерфейс по эвристикам и выявляют нарушения базовых принципов UX.",
-    goals: ["проблемы", "удобство"],
-    dataType: "качественные",
-    stage: ["концепция", "разработка", "готовый"],
-    context: ["лабораторно", "удаленно"],
-    requiresUsers: false,
-    resources: "низкие",
-    strengths: ["Быстро запускается", "Не нужен доступ к пользователям"],
-    weaknesses: ["Зависит от компетенции эксперта"],
-    whatItGives: "Список UX-проблем структуры, навигации и визуальной иерархии.",
-  },
-  {
-    name: "Cognitive Walkthrough",
-    description:
-      "Пошаговый разбор пользовательского сценария с оценкой вероятных ошибок на каждом шаге.",
-    goals: ["проблемы", "поведение"],
-    dataType: "качественные",
-    stage: ["концепция", "разработка"],
-    context: ["лабораторно", "удаленно"],
-    requiresUsers: false,
-    resources: "низкие",
-    strengths: ["Эффективен на ранних этапах", "Хорошо проверяет сценарии"],
-    weaknesses: ["Не показывает реальные эмоции пользователей"],
-    whatItGives: "Точки, где пользователь может сбиться или не понять следующий шаг.",
-  },
-  {
-    name: "A/B тестирование",
-    description:
-      "Сравнение двух интерфейсных вариантов по целевым метрикам на реальном трафике.",
-    goals: ["сравнение", "удобство"],
-    dataType: "количественные",
-    stage: ["готовый"],
-    context: ["удаленно", "в реальной среде"],
-    requiresUsers: true,
-    resources: "высокие",
-    strengths: ["Статистически обоснованный выбор", "Объективные метрики"],
-    weaknesses: ["Требует достаточного трафика", "Длительный цикл"],
-    whatItGives: "Подтверждение, какой вариант интерфейса эффективнее в реальном использовании.",
-  },
-  {
-    name: "SUS (System Usability Scale)",
-    description:
-      "Краткая стандартизированная шкала для количественной оценки удобства интерфейса.",
-    goals: ["удобство", "мнение"],
-    dataType: "количественные",
-    stage: ["разработка", "готовый"],
-    context: ["лабораторно", "удаленно"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Быстро собирается", "Удобно сравнивать между итерациями"],
-    weaknesses: ["Не объясняет причины низкой оценки"],
-    whatItGives: "Числовой индекс воспринимаемой удобности.",
-  },
-  {
-    name: "Интервью пользователей",
-    description:
-      "Полуструктурированные беседы с пользователями о задачах, ожиданиях и барьерах.",
-    goals: ["поведение", "мнение"],
-    dataType: "качественные",
-    stage: ["концепция", "разработка", "готовый"],
-    context: ["лабораторно", "удаленно", "в реальной среде"],
-    requiresUsers: true,
-    resources: "средние",
-    strengths: ["Глубокий контекст", "Выявляет мотивацию"],
-    weaknesses: ["Сложно стандартизировать ответы"],
-    whatItGives: "Причины поведения и ожиданий пользователей.",
-  },
-  {
-    name: "Опрос (Survey)",
-    description:
-      "Анкетирование пользователей для сбора массового субъективного мнения.",
-    goals: ["мнение", "удобство"],
-    dataType: "количественные",
-    stage: ["разработка", "готовый"],
-    context: ["удаленно"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Быстро масштабируется", "Подходит для большого охвата"],
-    weaknesses: ["Нет глубины причин"],
-    whatItGives: "Общую картину восприятия и удовлетворенности.",
-  },
-  {
-    name: "Карточная сортировка (Card Sorting)",
-    description:
-      "Пользователи группируют и называют элементы, формируя естественную информационную архитектуру.",
-    goals: ["понимание", "проблемы"],
-    dataType: "смешанные",
-    stage: ["концепция", "разработка"],
-    context: ["лабораторно", "удаленно"],
-    requiresUsers: true,
-    resources: "средние",
-    strengths: ["Улучшает структуру разделов", "Снижает когнитивную нагрузку"],
-    weaknesses: ["Требует грамотной интерпретации кластеров"],
-    whatItGives: "Понимание, как пользователи ожидают видеть структуру контента.",
-  },
-  {
-    name: "Дневниковые исследования",
-    description:
-      "Пользователи фиксируют опыт взаимодействия с продуктом в течение периода времени.",
-    goals: ["поведение", "мнение"],
-    dataType: "смешанные",
-    stage: ["разработка", "готовый"],
-    context: ["в реальной среде"],
-    requiresUsers: true,
-    resources: "высокие",
-    strengths: ["Показывает длительный опыт", "Дает контекст повседневного использования"],
-    weaknesses: ["Долгий сбор", "Зависит от дисциплины участников"],
-    whatItGives: "Данные о реальном использовании и изменении восприятия во времени.",
-  },
-  {
-    name: "Eye-tracking",
-    description:
-      "Отслеживание взгляда пользователя для анализа внимания и визуальной навигации.",
-    goals: ["поведение", "проблемы"],
-    dataType: "количественные",
-    stage: ["разработка", "готовый"],
-    context: ["лабораторно"],
-    requiresUsers: true,
-    resources: "высокие",
-    strengths: ["Точные визуальные метрики", "Показывает зоны внимания"],
-    weaknesses: ["Дорогое оборудование", "Сложная интерпретация"],
-    whatItGives: "Понимание, что пользователь видит и что игнорирует.",
-  },
-  {
-    name: "Аналитика (Google Analytics / метрики)",
-    description:
-      "Анализ цифровых метрик поведения: воронки, отказы, события, конверсии.",
-    goals: ["удобство", "сравнение", "проблемы"],
-    dataType: "количественные",
-    stage: ["готовый"],
-    context: ["в реальной среде", "удаленно"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Быстрый доступ к данным", "Объективная картина по массовой аудитории"],
-    weaknesses: ["Не отвечает на вопрос «почему»"],
-    whatItGives: "Где пользователи теряются в воронке и какие шаги проседают.",
-  },
-  {
-    name: "Heatmaps",
-    description:
-      "Карты кликов и скролла, показывающие зоны внимания и взаимодействия.",
-    goals: ["поведение", "проблемы"],
-    dataType: "количественные",
-    stage: ["разработка", "готовый"],
-    context: ["удаленно", "в реальной среде"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Быстрый визуальный анализ", "Простая интеграция"],
-    weaknesses: ["Ограниченная глубина интерпретации"],
-    whatItGives: "Что кликают, что игнорируют и до каких зон страницы доходят.",
-  },
-  {
-    name: "Task Success Rate",
-    description:
-      "Доля пользователей, успешно выполнивших целевую задачу.",
-    goals: ["удобство", "сравнение", "проблемы"],
-    dataType: "количественные",
-    stage: ["разработка", "готовый"],
-    context: ["лабораторно", "удаленно", "в реальной среде"],
-    requiresUsers: true,
-    resources: "средние",
-    strengths: ["Четкая объективная метрика", "Подходит для сравнений"],
-    weaknesses: ["Не показывает причины неуспеха"],
-    whatItGives: "Насколько интерфейс позволяет пользователю завершить задачу.",
-  },
-  {
-    name: "First Click Test",
-    description:
-      "Проверка первого клика пользователя при выполнении типовой задачи.",
-    goals: ["понимание", "проблемы"],
-    dataType: "количественные",
-    stage: ["концепция", "разработка"],
-    context: ["удаленно", "лабораторно"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Быстрый запуск", "Хорошо выявляет проблемы навигации"],
-    weaknesses: ["Проверяет только ранний этап сценария"],
-    whatItGives: "Понимание, интуитивна ли точка входа в задачу.",
-  },
-  {
-    name: "Five Second Test",
-    description:
-      "Проверка первого впечатления: что пользователь успел понять за 5 секунд.",
-    goals: ["мнение", "понимание"],
-    dataType: "качественные",
-    stage: ["концепция", "разработка"],
-    context: ["удаленно", "лабораторно"],
-    requiresUsers: true,
-    resources: "низкие",
-    strengths: ["Очень быстрый тест", "Показывает читаемость первого экрана"],
-    weaknesses: ["Не оценивает полный пользовательский сценарий"],
-    whatItGives: "Насколько ясно считывается ценность и структура экрана.",
-  },
-];
+import { useEffect, useMemo, useState } from "react";
 
 const resourceRank = {
   низкие: 1,
@@ -362,8 +149,8 @@ function buildFitReasons(method, form) {
   return reasons.slice(0, 3);
 }
 
-function recommendationEngine(form) {
-  const scoredMethods = METHODS.map((method) => ({
+function recommendationEngine(form, methods) {
+  const scoredMethods = methods.map((method) => ({
     ...method,
     score: scoreMethod(method, form),
   })).sort((a, b) => b.score - a.score);
@@ -381,13 +168,52 @@ function recommendationEngine(form) {
 }
 
 export default function App() {
+  const [methods, setMethods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [expandedMethods, setExpandedMethods] = useState({});
   const [showTheory, setShowTheory] = useState(false);
   const [showAdditional, setShowAdditional] = useState(false);
 
-  const result = useMemo(() => recommendationEngine(form), [form]);
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMethods = async () => {
+      try {
+        const response = await fetch("/data/methods.json");
+        if (!response.ok) {
+          throw new Error("Failed to load methods");
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid methods format");
+        }
+
+        if (mounted) {
+          setMethods(data);
+          setError(null);
+          setLoading(false);
+        }
+      } catch (fetchError) {
+        if (mounted) {
+          setMethods([]);
+          setError(fetchError instanceof Error ? fetchError.message : "Unknown error");
+          setLoading(false);
+        }
+      }
+    };
+
+    loadMethods();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const result = useMemo(() => recommendationEngine(form, methods), [form, methods]);
 
   const updateForm = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -405,6 +231,10 @@ export default function App() {
     setShowTheory(false);
     setShowAdditional(false);
   };
+
+  if (loading) {
+    return <div>Загрузка методов...</div>;
+  }
 
   return (
     <div className="container">
