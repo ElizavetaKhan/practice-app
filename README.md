@@ -55,8 +55,8 @@
 
 ### 1. Клонировать репозиторий
 
-```git clone git@github.com:ElizavetaKhan/practice-app.git```
-```cd frontend```
+```git clone https://github.com/ElizavetaKhan/practice-app.git```
+```cd practice-app```
 
 ### 2. Собрать Docker-образ
 
